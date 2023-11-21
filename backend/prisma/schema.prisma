@@ -13,28 +13,297 @@ datasource db {
 
 model Expense {
   id            Int      @id @default(autoincrement())
-  category_name String  
+  Categories      Categories @relation(fields: [categoriesId], references: [id])
+  categoriesId    Int
   amount        String   @map("amount") @default("0")
   expense_date  DateTime
+
+  @@map("expenses")
 }
 
-model Category {
+model Categories {
   id            Int      @id @default(autoincrement())
-  name String   
+  name          String   
   description   String
+  expenses      Expense[]
 }
-
 
 model Income {
   id            Int      @id @default(autoincrement())
-  category_name String  
+  category      Incomes  @relation(fields: [categoryId], references: [id])
+  categoryId    Int
   amount        String   @map("amount") @default("0")
-  income_date  DateTime
+  income_date   DateTime
+
+  @@map("incomes")
+}
+
+model Incomes {
+  id            Int      @id @default(autoincrement())
+  name          String   
+  description   String
+  incomes       Income[]
 }
 
 
-model incomes {
-  id            Int      @id @default(autoincrement())
-  name String   
+model UserRole {
+  id     String @id @unique @default(cuid())
+  userId String
+  roleId String
+  user   User   @relation(fields: [userId], references: [id])
+  role   Role   @relation(fields: [roleId], references: [id], name: "UserRoleToRole", map: "UserRoleRoleIdUnique")
+
+  @@index([userId, roleId], name: "user_role_unique")
+}
+
+
+model PrivilegeRole {
+  id           String     @id @unique @default(cuid())
+  roleId       String
+  privilegeId  String
+  role         Role       @relation(fields: [roleId], references: [id])
+  privilege    Privilege  @relation(fields: [privilegeId], references: [id])
+
+  @@index([roleId, privilegeId], name: "role_privilege_unique")
+}
+
+
+model Privilege {
+  id    String  @id @unique @default(cuid())
+  name  String  @unique
+  privilegeRoles PrivilegeRole[]  @relation(fields: [privilegeId], references: [id])
+  roles Role[] 
+}
+
+model Role {
+  id        String      @id @unique @default(cuid())
+  name      String      @unique
+  users     User[]      
+  userRoles UserRole[] 
+ privilegeRoles PrivilegeRole[]  
+  
+  @@index([id])
+}
+
+
+model User {
+  id              String      @id @unique @default(cuid())
+  first_name      String
+  last_name       String
+  email           String      @unique
+  phone           String      @unique
+  password        String
+  roles Role[]
+  Active          Boolean     @default(true)
+  Deleted         Boolean     @default(false)
+  CreatedBy       String?
+  UpdatedBy       String?
+  DeletedBy       String?
+  DateCreated     DateTime    @default(now())
+  DateUpdated     DateTime?
+  DateDeleted     DateTime?
+  DeletedReason   String?
+  businesses      Business[]
+  staff Staff[] @relation("staffOwner")
+  businessId String?
+  staffOwnerId    String?
+}
+
+model Staff {
+  id              String      @id @unique @default(cuid())
+  first_name      String
+  last_name       String
+  email           String      @unique
+  phone           String      @unique
+  password        String
+  roles           UserRole[]
+  Active          Boolean     @default(true)
+  Deleted         Boolean     @default(false)
+  CreatedBy       String?
+  UpdatedBy       String?
+  DeletedBy       String?
+  DateCreated     DateTime    @default(now())
+  DateUpdated     DateTime?
+  DateDeleted     DateTime?
+  DeletedReason   String?
+  user       User?       @relation("staffOwner", fields: [staffOwnerId], references: [id])
+  businesses Business[]
+  staffOwnerId    String?
+}
+
+model Business {
+  id            String   @id @unique @default(cuid())
+  name          String
   description   String
+  country       String?
+  currency      String?   @default("SLL")
+  timezone      String?
+  phone         String
+  email         String
+  business_type String   @default("other")
+  image         String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  customers  Customer[]
+  products   Product[]
+  categories Category[]
+  staff Staff[]
+  sales      sampleSales[]
+  Active          Boolean     @default(true)
+  Deleted         Boolean     @default(false)
+  CreatedBy       String?
+  UpdatedBy       String?
+  DeletedBy       String?
+  DateCreated     DateTime    @default(now())
+  DateUpdated     DateTime?
+  DateDeleted     DateTime?
+  DeletedReason   String?
+
+  @@index([id])
+  @@map("business")
+}
+
+model Category {
+  id             String   @id @unique @default(cuid())
+  name           String
+  image          String?
+  products       Product[]
+  Business       Business? @relation(fields: [business_id], references: [id])
+  business_id    String?
+  Active         Boolean     @default(true)
+  Deleted        Boolean     @default(false)
+  CreatedBy      String?
+  UpdatedBy      String?
+  DeletedBy      String?
+  DateCreated    DateTime    @default(now())
+  DateUpdated    DateTime?
+  DateDeleted    DateTime?
+  DeletedReason  String?
+}
+
+model Customer {
+  id             String    @id @unique @default(cuid())
+  name           String
+  phone          String    @unique
+  email          String?   @unique
+  country        String?
+  city           String?
+  address        String?
+  gender         String?
+  business       Business? @relation(fields: [business_id], references: [id])
+  business_id    String?
+  Active         Boolean   @default(true)
+  Deleted        Boolean   @default(false)
+  CreatedBy      String?
+  UpdatedBy      String?
+  DeletedBy      String?
+  DateCreated    DateTime  @default(now())
+  DateUpdated    DateTime?
+  DateDeleted    DateTime?
+  DeletedReason  String?
+}
+
+model Product {
+  id                String    @id @unique @default(cuid())
+  name              String
+  sell_method       String?
+  margin            Int?
+  price             Float
+  cost_price        Float?
+  quantity          Int       @default(0)
+  barcode           String?
+  expiry_date       DateTime?
+  expiry_date_alert Int       @default(0)
+  batch_no          String?
+  tax               Float     @default(0.0)
+  image             String?
+  variant_name      String?
+  low_stock_alert   Int       @default(0)
+  category       Category?        @relation(fields: [category_id], references: [id])
+  category_id    String?
+  business       Business         @relation(fields: [business_id], references: [id])
+  business_id    String
+  ProductVariant ProductVariant[]
+  QrcodeScan     QrcodeScan[]
+   Active         Boolean   @default(true)
+  Deleted        Boolean   @default(false)
+  CreatedBy      String?
+  UpdatedBy      String?
+  DeletedBy      String?
+  DateCreated    DateTime  @default(now())
+  DateUpdated    DateTime?
+  DateDeleted    DateTime?
+  DeletedReason  String?
+}
+
+model ProductVariant {
+  id                   String    @id @unique @default(cuid())
+  name                 String
+  image                String?
+  selling_price        Float
+  quantity             Int       @default(1)
+  low_stock_alert      Int       @default(10)
+  auto_update_stock    Boolean   @default(false)
+  prevent_out_of_stock Boolean   @default(true) // prevents item sale if out of stock
+  barcode              String?
+  expiry               DateTime?
+  expiry_alert_days    Int       @default(7) // alert 7 days before item expires
+  tax_percentage       Float     @default(0)
+  tax_inclusive        Boolean   @default(false)
+  internal_note        String?
+  tags                 String[]
+  batch_no             String?
+  product    Product @relation(fields: [product_id], references: [id])
+  product_id String
+   Active         Boolean   @default(true)
+  Deleted        Boolean   @default(false)
+  CreatedBy      String?
+  UpdatedBy      String?
+  DeletedBy      String?
+  DateCreated    DateTime  @default(now())
+  DateUpdated    DateTime?
+  DateDeleted    DateTime?
+  DeletedReason  String?
+}
+
+model QrcodeScan {
+  id           Int      @id @unique @default(1)
+  product      Product? @relation(fields: [product_id], references: [id])
+  product_id   String?
+  product_name String
+  QrCode       String
+}
+
+
+enum CustomerPaymentStatus {
+  paid
+  partial
+  unpaid
+}
+
+enum Charges {
+  delivery
+  packing
+  service
+  other
+}
+
+
+model sampleSales {
+  id String @id @unique @default(cuid())
+  selected_items Json[]
+  sub_total String?
+  tax String?
+  discount String?
+  charges String?
+  customer_type String?
+  ground_total Int
+  payment_status CustomerPaymentStatus? @default(unpaid)
+  payment_method String?
+  customer_phone String?
+  customer_name String?
+  business Business? @relation(fields: [business_id], references: [id])
+  business_id String?
+  @@index([id])
+  @@map("sampleSales")
 }
